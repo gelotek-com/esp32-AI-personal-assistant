@@ -69,7 +69,7 @@ int32_t get_sound_data(uint8_t *data, int32_t len) {
     Serial.println("Playback finished!");
     playbackDone = true;
     audioFile.close();
-    a2dp_source.stop(); //stopping the esp from tryng to reconnect again
+    a2dp_source.end(); //stopping the esp from tryng to reconnect again
     memset(data + bytesRead, 0, len - bytesRead);
   }
   return len;
