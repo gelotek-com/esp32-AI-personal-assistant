@@ -5,11 +5,11 @@
 #include "BluetoothA2DPSource.h"
 #include "esp_task_wdt.h"
 
-const char* ssid = "";
-const char* password = "";
-const char* fileURL = "http://192.168.1.x:x/test.wav"; //use your local url and port
-const char* filePath = "/test.wav";
-const char* btDeviceName = ""; //use the name of your usb device
+const char* ssid = " ";
+const char* password = " ";
+const char* fileURL  = "http://192.168.1.x:x/response.wav"; //use your local server ip and the open port
+const char* filePath = "/response.wav";
+const char* btDeviceName = ""; //use the name of your bt device
 
 #define I2S_WS 25
 #define I2S_SD 34
@@ -18,6 +18,9 @@ const char* btDeviceName = ""; //use the name of your usb device
 #define TARGET_SIZE 524288
 #define BUFFER_SIZE 1024
 
+#define REC_LED 27
+#define BLT_LED 12
+
 int32_t i2sBuffer[BUFFER_SIZE];
 BluetoothA2DPSource a2dp_source;
 File audioFile;
@@ -25,6 +28,7 @@ bool playbackDone = false;
 
 bool downloadFile(const char* url, const char* path) {
     HTTPClient http;
+    http.setTimeout(10000);
     http.begin(url);
     int httpCode = http.GET();
     if (httpCode == HTTP_CODE_OK) {
@@ -68,6 +72,9 @@ int32_t get_sound_data(uint8_t *data, int32_t len) {
 }
 
 void setup() {
+    pinMode(REC_LED, OUTPUT);
+    pinMode(BLT_LED, OUTPUT);
+  
     Serial.begin(115200);
     delay(1000);
     esp_task_wdt_deinit();
@@ -104,6 +111,9 @@ void setup() {
 
     size_t totalBytes = 0;
     Serial.println("Recording audio...");
+    
+    digitalWrite(REC_LED, HIGH);
+    
     while (totalBytes < TARGET_SIZE) {
         size_t bytesRead = 0;
         i2s_read(I2S_NUM_0, (char*)i2sBuffer, sizeof(i2sBuffer), &bytesRead, portMAX_DELAY);
@@ -136,9 +146,11 @@ void setup() {
     file.close();
     Serial.println("Recording complete");
 
+    digitalWrite(REC_LED, LOW);
+
     if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
-        http.begin("http://192.168.1.x:x/upload"); //use your url and port
+        http.begin("http://192.168.1.x:x/upload");
         http.addHeader("Content-Type", "audio/wav");
         File wavFile = SPIFFS.open("/audio.wav", FILE_READ);
         int code = http.sendRequest("POST", &wavFile, wavFile.size());
@@ -150,7 +162,8 @@ void setup() {
 
     if (downloadFile(fileURL, filePath)) Serial.println("Download completed successfully");
     else { Serial.println("Download failed"); return; }
-
+    
+    digitalWrite(BLT_LED, HIGH);
     Serial.println("Initializing Bluetooth...");
     a2dp_source.set_data_callback(get_sound_data);
     a2dp_source.start(btDeviceName);
