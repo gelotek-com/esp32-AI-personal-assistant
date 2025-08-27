@@ -19,7 +19,7 @@ const char* btDeviceName = ""; //use the name of your bt device
 #define BUFFER_SIZE 1024
 
 #define REC_LED 27
-#define BLT_LED 12
+#define BLT_LED 14
 
 int32_t i2sBuffer[BUFFER_SIZE];
 BluetoothA2DPSource a2dp_source;
